@@ -2,7 +2,7 @@ SHELL = /bin/sh
 CXX = clang++-3.8
 CXXSTD = -std=c++1z -stdlib=libc++
 WARNINGS = -pedantic -Wall -Werror -Wfatal-errors -Wextra -Wno-unused-parameter -Wno-unused-variable
-CXXFLAGS = $(CXXSTD) -O3 $(WARNINGS) -g -c
+CXXFLAGS = $(CXXSTD) -O3 $(WARNINGS)
 LDFLAGS = $(CXXSTD)
 EXE = hotmake
 
