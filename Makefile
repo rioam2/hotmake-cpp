@@ -1,5 +1,7 @@
-main : main.cpp
-	clang++ main.cpp -o main
+# Compile main executable
+hotmake : main.cpp
+	clang++ main.cpp -o hotmake
 
+# Clean up working directory
 clean : 
-	rm -rf ./main
+	rm -rf ./hotmake
