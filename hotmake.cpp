@@ -1,30 +1,31 @@
-#include <iostream>
 #include <string>
 
+#include "MakeRule.h"
+
+#include <iostream>
+using std::cerr;
+using std::cout;
+using std::endl;
 using std::string;
 
 /**
- * Prints the CLI usage to the terminal.
+ * Prints the CLI usage to the terminal and returns
+ * error code of 1.
  */
-void printUsage() {
-    std::cout << "Usage: hotmake [make rule] [execution command]\n";
+int printUsage(char* executable) {
+    cout << "Usage: " << executable << " [make rule]\n";
+    return 1;
 }
 
 int main(int argc, char* argv[]) {
-    /* Process user input */
-    string rule;
-    string exec;
-    switch (argc) {
-        case 1:
-            printUsage();
-            return 1;
-        case 2:
-            rule = argv[1];
-            exec = "";
-            break;
-        default:
-            rule = argv[1];
-            exec = argv[2];
+    try { /* Primitive exception handling */
+        /* Process user input */
+        if (argc != 2) return printUsage(argv[0]);
+        /* Make a new job out of target */
+        MakeRule job(argv[1]);
+    } catch (const char* except) {
+        cerr << except << endl;
+        return 1;
     }
     return 0;
 }
