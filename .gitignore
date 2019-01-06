@@ -1,2 +1,5 @@
 # Binaries
 hotmake
+
+# Compiler object files
+*.o
