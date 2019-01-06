@@ -1,6 +1,6 @@
 #include <string>
 
-#include "MakeRule.h"
+#include "MakeRecord.h"
 
 #include <iostream>
 using std::cerr;
@@ -13,18 +13,18 @@ using std::string;
  * error code of 1.
  */
 int printUsage(char* executable) {
-    cout << "Usage: " << executable << " [make rule]\n";
+    cerr << "Usage: " << executable << " [make rule]\n";
     return 1;
 }
 
 int main(int argc, char* argv[]) {
-    try { /* Primitive exception handling */
-        /* Process user input */
-        if (argc != 2) return printUsage(argv[0]);
-        /* Make a new job out of target */
-        MakeRule job(argv[1]);
-    } catch (const char* except) {
-        cerr << except << endl;
+    if (argc != 2) return printUsage(argv[0]);
+    /* Primitive exception handling */
+    try {
+        MakeRecord makefile;
+        auto [target, deps] = makefile.getRule(argv[1]);
+    } catch (const char* e) {
+        cerr << e << endl;
         return 1;
     }
     return 0;
