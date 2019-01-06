@@ -6,7 +6,7 @@ CXXFLAGS = $(CXXSTD) -O3 $(WARNINGS)
 LDFLAGS = $(CXXSTD)
 EXE = hotmake
 
-OBJS = MakeRule.o
+OBJS = MakeRecord.o
 
 # Compile all dependencies
 all : $(EXE)
@@ -19,4 +19,4 @@ $(EXE) : $(EXE).cpp $(OBJS)
 clean : 
 	rm -rf $(EXE) $(OBJS)
 
-.PHONY : clean all
+.PHONY : clean all hotmake
