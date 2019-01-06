@@ -1,17 +1,12 @@
-#include "MakeRule.h"
-#include <algorithm>
-#include <iterator>
-#include <map>
-#include <regex>
-#include <sstream>
+#include "MakeRecord.h"
 
 using std::back_inserter;
-using std::copy;
+using std::find;
+using std::ifstream;
 using std::istream_iterator;
 using std::istringstream;
-using std::map;
-using std::pair;
 using std::regex;
+using std::remove;
 using std::smatch;
 
 /* Debug only */
@@ -19,12 +14,47 @@ using std::smatch;
 using std::cout;
 using std::endl;
 
-MakeRule::MakeRule(const string& rule) {
-    __buildDeps(rule);
-};
+MakeRecord::MakeRecord() {
+    smatch ruleMatch;
+    regex ruleReg("(\\S+)(?:[^\\S\\n]+)?:(?:[^\\S\\n]+)([^\\n]+)", regex::ECMAScript);
+    /* Process Makefile in current execution directory */
+    __forEachLine([&](string line) -> void {
+        /* Check if current line is a rule declaration */
+        if (std::regex_match(line, ruleMatch, ruleReg)) {
+            string target = ruleMatch[1];
+            string deps = ruleMatch[2];
+            /* Transfer deps string to vector */
+            istringstream iss(deps);
+            vector<string> depsVec = {
+                istream_iterator<string>{iss},
+                istream_iterator<string>{}};
+            __rules[target] = Rule(target, depsVec);
+        }
+    });
+    /* Second pass for adding recursive dependencies */
+    vector<string> phonyTargets = (ruleExists(".PHONY"))
+                                      ? __rules[".PHONY"].deps
+                                      : vector<string>();
+    for (auto&& [target, rule] : __rules) {
+        if (target != ".PHONY") {
+            for (string dep : rule.deps) {
+                /* Check if dependency is phony */
+                auto phonySearch = find(phonyTargets.begin(), phonyTargets.end(), dep);
+                if (phonySearch != phonyTargets.end()) {
+                    rule.deps.erase(
+                        std::remove(rule.deps.begin(), rule.deps.end(), dep),
+                        rule.deps.end());
+                }
+                /* If the dependency has it's own rule, add deps */
+                if (ruleExists(dep)) {
+                    rule.addDeps(__rules[dep].deps);
+                }
+            }
+        }
+    }
+}
 
-void MakeRule::__forEachLine(function<void(string)> cb) {
-    string line;
+void MakeRecord::__forEachLine(function<void(string)> cb) {
     string validNames[3] = {"Makefile", "makefile", "GNUmakefile"};
     /* Process first match from valid makefile names */
     for (string fileName : validNames) {
@@ -66,13 +96,13 @@ void MakeRule::__forEachLine(function<void(string)> cb) {
             return 0;
         };
         /* Open and read file */
+        string line;
         ifstream file(fileName);
         if (file.is_open()) {
             while (file.good()) {
                 getline(file, line);
                 addVarDef(line);
-                line = substituteVars(line);
-                cb(line);
+                cb(substituteVars(line));
             }
             file.close();
             /* Return control after successful read */
@@ -83,44 +113,15 @@ void MakeRule::__forEachLine(function<void(string)> cb) {
     throw "No Makefile in current working directory";
 };
 
-void MakeRule::__buildDeps(const string& rule) {
-    string phonyTargets;
-    bool targetLocated = false;
-    /* Regex definitions */
-    regex ruleReg("(\\S+)(?:[^\\S\\n]+)?:(?:[^\\S\\n]+)([^\\n]+)", regex::ECMAScript);
-    /* Iterate over makefile lines */
-    __forEachLine([&](string line) {
-        /* Match general makerule definition structure */
-        smatch ruleMatch;
-        bool ruleSearch = std::regex_match(line, ruleMatch, ruleReg);
-        if (ruleSearch) {
-            string target = ruleMatch[1];
-            string deps = ruleMatch[2];
-            /* Only process target rule */
-            bool isTargetRule = target == rule;
-            bool isDependentRule =
-                std::find(__dependencies.begin(),
-                          __dependencies.end(), target) !=
-                        __dependencies.end()
-                    ? true
-                    : false;
-            /* Set phony targets */
-            if (target == ".PHONY") phonyTargets = deps;
-            /* Process rule that is either target or dependent */
-            if (isTargetRule || isDependentRule) {
-                targetLocated = true;
-                if (isTargetRule) __target = target;
-                istringstream iss(deps);
-                copy(istream_iterator<string>(iss),
-                     istream_iterator<string>(),
-                     back_inserter(__dependencies));
-            }
-        }
-    });
-    if (!targetLocated) throw "Make target does not exist";
-    /* Swap out phony target if needed */
-    if (phonyTargets.find(__target) != string::npos) {
-        __target = __dependencies[0];
-        __dependencies.erase(__dependencies.begin());
+bool MakeRecord::ruleExists(const string& rule) {
+    return __rules.find(rule) != __rules.end();
+}
+
+MakeRecord::Rule MakeRecord::getRule(const string& rule) {
+    auto search = __rules.find(rule);
+    if (search == __rules.end()) {
+        throw "Make rule does not exist";
+    } else {
+        return search->second;
     }
 };
