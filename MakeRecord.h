@@ -54,6 +54,7 @@ class MakeRecord {
     /**
      * Retrieves a given rule from the Makefile.
      */
+    MakeRecord::Rule getRule(); /* Gets default rule */
     MakeRecord::Rule getRule(const string& rule);
 
     /**
@@ -72,4 +73,5 @@ class MakeRecord {
 
     /* Internal class storage for make rules */
     map<string, Rule> __rules;
+    Rule defaultTarget;
 };

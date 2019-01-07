@@ -17,6 +17,7 @@ using std::endl;
 MakeRecord::MakeRecord() {
     smatch ruleMatch;
     regex ruleReg("(\\S+)(?:[^\\S\\n]+)?:(?:[^\\S\\n]+)([^\\n]+)", regex::ECMAScript);
+    vector<Rule> rulesInOrder;
     /* Process Makefile in current execution directory */
     __forEachLine([&](string line) -> void {
         /* Check if current line is a rule declaration */
@@ -28,13 +29,22 @@ MakeRecord::MakeRecord() {
             vector<string> depsVec = {
                 istream_iterator<string>{iss},
                 istream_iterator<string>{}};
-            __rules[target] = Rule(target, depsVec);
+            Rule r(target, depsVec);
+            rulesInOrder.push_back(r);
+            __rules[target] = r;
         }
     });
     /* Second pass for adding recursive dependencies */
     vector<string> phonyTargets = (ruleExists(".PHONY"))
                                       ? __rules[".PHONY"].deps
                                       : vector<string>();
+    /* Locate default rule for when none specified */
+    for (Rule r : rulesInOrder) {
+        if (find(phonyTargets.begin(), phonyTargets.end(), r.target) != phonyTargets.end())
+            continue;
+        defaultTarget = r;
+        break;
+    }
     for (auto&& [target, rule] : __rules) {
         if (target != ".PHONY") {
             for (string dep : rule.deps) {
@@ -124,4 +134,8 @@ MakeRecord::Rule MakeRecord::getRule(const string& rule) {
     } else {
         return search->second;
     }
+};
+
+MakeRecord::Rule MakeRecord::getRule() {
+    return defaultTarget;
 };
