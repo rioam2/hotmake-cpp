@@ -14,7 +14,7 @@ all : $(EXE)
 
 # Compile hotmake main executable
 $(EXE) : $(EXE).cpp $(OBJS)
-	$(CXX) $^ $(CXXFLAGS) -o $@
+	$(CXX) $^ $(CXXFLAGS) -lpthread -lm -o $@
 
 # Clean up working directory
 clean : 
