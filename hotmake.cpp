@@ -12,6 +12,8 @@
 #include "MakeRecord.h"
 #include "inotify-cxx/inotify-cxx.h"
 
+#define VERSION "1.0"
+
 using std::async;
 using std::cerr;
 using std::cout;
@@ -72,26 +74,28 @@ int main(int argc, char* argv[]) {
         /* Watch all dependent files */
         Inotify notify;
         system("clear"); /* Clear terminal window */
-        cout << "\033[1;37mHotmake v1.0:\033[0m Target: " << target << "\n"
-             << endl;
-        cout << "\033[1;37mWatching source files for changes:\033[0m\n";
+        cout << "\033[1;37mHotmake v" << VERSION << ":\033[0m \033[4m" << target << "\033[0m" << endl;
         for (string dep : deps) {
+            cout << "  » " << dep << endl;
             dep = "./" + dep;
-            cout << " + " << dep << endl;
             InotifyWatch watch(dep, IN_MODIFY);
             notify.Add(watch);
         }
-        cout << endl;
         auto interactiveBuild = [&]() {
             bool buildFailed = false;
             bool buildComplete = false;
             auto build = async(std::launch::async, [&] {
                 string result = exec("make");
+                /* Primitive error checking - fix later */
+                if (result.find("fail") != result.npos) {
+                    buildFailed = true;
+                }
                 buildComplete = true;
             });
             auto printProgress = async(std::launch::async, [&] {
                 string color_building = "\033[1;93m";
                 string color_complete = "\033[1;32m";
+                string color_failed = "\033[1;31m";
                 string base = "Building changes";
                 printInteractive(color_building + "  " + base);
                 /* Spinner animation courtesy of cli-spinners on GitHub :) - thank you! */
@@ -103,7 +107,11 @@ int main(int argc, char* argv[]) {
                     frame = (++frame) % spinner.size();
                     usleep(70000);
                 }
-                printInteractive(color_complete + "✔ Build complete");
+                if (buildFailed) {
+                    printInteractive(color_failed + "✖ Build failed");
+                } else {
+                    printInteractive(color_complete + "✔ Build complete");
+                }
             });
         };
         interactiveBuild(); /* Run build on startup */
