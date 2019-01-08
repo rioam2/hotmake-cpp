@@ -51,7 +51,7 @@ class MakeRecord {
         vector<string> deps;
     };
 
-    /**
+    /** 
      * Retrieves a given rule from the Makefile.
      */
     MakeRecord::Rule getRule(); /* Gets default rule */
