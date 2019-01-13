@@ -1,3 +1,7 @@
+/**
+ * Modification disclaimer by rioam2:
+ * Commented out dynamic throw expressions for compatibility with Clang++-4.0
+ */
 
 /// inotify C++ interface header
 /**
