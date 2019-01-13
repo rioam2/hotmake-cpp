@@ -15,6 +15,7 @@ Hotmake runs in the terminal as an interactive executable. When run, it analyzes
 This project is currently a work-in-progress and should not be expected to work as-is for most use-cases. Please use this tool only for experimentation and not for production.
 
 #### Hotmake has only been tested and built against `Clang++4.0`, and functionality may vary between compilers.
+### Hotmake is aimed for use on UNIX-based systems only. This tool will not work on Windows-based systems in its current state (use WSL if needed).
 
 The current development timeline is as follows:
 
