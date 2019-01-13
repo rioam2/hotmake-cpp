@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "ClangError.h"
 #include "MakeRecord.h"
 #include "inotify-cxx/inotify-cxx.h"
 
@@ -82,12 +83,13 @@ int main(int argc, char* argv[]) {
             notify.Add(watch);
         }
         auto interactiveBuild = [&]() {
+            string buildResult;
             bool buildFailed = false;
             bool buildComplete = false;
             auto build = async(std::launch::async, [&] {
-                string result = exec("make");
+                buildResult = exec("make --silent 2>&1"); /* Redirect stderr > stdout */
                 /* Primitive error checking - fix later */
-                if (result.find("fail") != result.npos) {
+                if (buildResult.find("fail") != buildResult.npos) {
                     buildFailed = true;
                 }
                 buildComplete = true;
@@ -108,12 +110,20 @@ int main(int argc, char* argv[]) {
                     usleep(70000);
                 }
                 if (buildFailed) {
-                    printInteractive(color_failed + "✖ Build failed");
+                    string failMessage = "✖ ";
+                    /* Process stderr of make command */
+                    ClangError result(buildResult);
+                    /* Primitive display of errors using printInteractice - fix later */
+                    for (ClangError::ERR err : result.getErrors()) {
+                        failMessage += err.file + "[" + err.row + "]: " + err.type + ": " + err.details;
+                    }
+                    printInteractive(color_failed + failMessage);
                 } else {
                     printInteractive(color_complete + "✔ Build complete");
                 }
             });
         };
+        cout << endl;
         interactiveBuild(); /* Run build on startup */
         /* Watch for file updates and squash redundant triggers */
         while (notify.WaitForEvents() && notify.WaitForEvents()) {
